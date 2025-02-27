@@ -1,0 +1,13 @@
+name: "Issue Scouter"
+description: "Github action to list of issues you can contribute"
+inputs:
+  config_file:
+    description: "YAML configuration file"
+    required: true
+  dry_run:
+    description: "Run without committing and pushing changes"
+    required: false
+    default: "false"
+runs:
+  using: "docker"
+  image: "Dockerfile"

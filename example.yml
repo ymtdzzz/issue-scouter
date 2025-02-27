@@ -1,0 +1,9 @@
+repositories:
+  groupA:
+    - https://github.com/open-telemetry/opentelemetry-ruby
+    - https://github.com/open-telemetry/opentelemetry-ruby-contrib
+labels:
+ - "help wanted"
+ - "good first issue"
+ - "bug"
+per_page: 100
