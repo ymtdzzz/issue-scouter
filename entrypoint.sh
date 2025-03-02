@@ -2,9 +2,9 @@
 
 set -e
 
-DRY_RUN="${DRY_RUN:-false}"
+INPUT_DRY_RUN="${INPUT_DRY_RUN:-false}"
 
-echo "Dry-run mode: ${DRY_RUN}"
+echo "Dry-run mode: ${INPUT_DRY_RUN}"
 
 rm -rf ./issues
 
@@ -18,7 +18,7 @@ if git diff --quiet; then
   exit 0
 fi
 
-if [ "${DRY_RUN}" = "true" ]; then
+if [ "${INPUT_DRY_RUN}" = "true" ]; then
   echo "Dry-run mode: Changes detected but not committing."
   exit 0
 fi

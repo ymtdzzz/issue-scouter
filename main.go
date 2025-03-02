@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	configFile := os.Getenv("CONFIG_FILE")
+	configFile := os.Getenv("INPUT_CONFIG_FILE")
 	if configFile == "" {
 		log.Fatal("No config file specified")
 		os.Exit(1)
