@@ -31,8 +31,8 @@ func (r issues) generateMarkdown() markdownFiles {
 		sb.Reset()
 		sb.WriteString(fmt.Sprintf("# %s\n\n", k))
 
-		sb.WriteString("| Repository | Title | UpdatedAt | Labels | Assignee |\n")
-		sb.WriteString("| --- | --- | --- | --- | --- |\n")
+		sb.WriteString("| Repository | Title | UpdatedAt | Labels | Assignee | Comments |\n")
+		sb.WriteString("| --- | --- | --- | --- | --- | --- |\n")
 
 		// Add an entry to index
 		sbi.WriteString(fmt.Sprintf("- [%s - %d issues available](%s)\n", k, len(r[k]), issuePath))
@@ -45,15 +45,16 @@ func (r issues) generateMarkdown() markdownFiles {
 			assignee := issue.Assignee.GetName()
 			owner, repoName, _ := parseRepoURL(issue.GetURL())
 			sb.WriteString(fmt.Sprintf(
-				"| [%s](https://github.com/%s/%s) | [%s](%s) | %s | %s | %s |\n",
+				"| [%s](https://github.com/%s/%s) | [%s](%s) | %s | %s | %s | %d |\n",
 				repoName,
 				owner,
 				repoName,
 				issue.GetTitle(),
 				issue.GetURL(),
-				issue.GetUpdatedAt(),
+				issue.GetUpdatedAt().Time.Format("2006-01-02"),
 				strings.Join(labels, ", "),
 				assignee,
+				issue.GetComments(),
 			))
 		}
 		sb.WriteString("\n")
