@@ -86,14 +86,14 @@ func (fs markdownFiles) saveToFiles() error {
 	for _, f := range fs {
 		dir := filepath.Dir(f.pathRelative)
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
-			err := os.MkdirAll(dir, 0755)
+			err := os.MkdirAll(dir, 0750)
 			if err != nil {
-				return fmt.Errorf("Failed to create directory %s: %v", dir, err)
+				return fmt.Errorf("failed to create directory %s: %v", dir, err)
 			}
 		}
 
-		if err := os.WriteFile(f.pathRelative, []byte(f.content), 0644); err != nil {
-			return fmt.Errorf("Failed to save a file: %v", err)
+		if err := os.WriteFile(f.pathRelative, []byte(f.content), 0640); err != nil {
+			return fmt.Errorf("failed to save a file: %v", err)
 		}
 	}
 

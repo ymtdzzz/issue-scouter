@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/creasty/defaults"
@@ -16,6 +17,7 @@ type Config struct {
 }
 
 func loadConfig(filename string) (*Config, error) {
+	filename = filepath.Clean(filename)
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -33,7 +35,7 @@ func loadConfig(filename string) (*Config, error) {
 func parseRepoURL(url string) (owner, repo string, err error) {
 	parts := strings.Split(strings.TrimPrefix(url, "https://github.com/"), "/")
 	if len(parts) < 2 {
-		return "", "", fmt.Errorf("Invalid repository URL: %s", url)
+		return "", "", fmt.Errorf("invalid repository URL: %s", url)
 	}
 	return parts[0], parts[1], nil
 }

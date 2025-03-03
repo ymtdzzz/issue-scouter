@@ -28,6 +28,8 @@ func newClient(config *Config) *client {
 	if token == "" {
 		log.Println("ISSUE_SCOUTER_PAT is not set, initialize Github client without credentials")
 		ghc = github.NewClient(nil)
+
+		return &client{ghc, config}
 	}
 
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
