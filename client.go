@@ -24,9 +24,9 @@ type client struct {
 
 func newClient(config *Config) *client {
 	var ghc *github.Client
-	token := os.Getenv("ISSUE_SCOUTER_PAT")
+	token := os.Getenv("GITHUB_TOKEN")
 	if token == "" {
-		log.Println("ISSUE_SCOUTER_PAT is not set, initialize Github client without credentials")
+		log.Println("GITHUB_TOKEN is not set, initialize Github client without credentials")
 		ghc = github.NewClient(nil)
 
 		return &client{ghc, config}
