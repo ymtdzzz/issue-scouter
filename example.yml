@@ -7,3 +7,4 @@ labels:
  - "good first issue"
  - "bug"
 per_page: 100
+destination: "./test"

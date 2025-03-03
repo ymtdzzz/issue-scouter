@@ -16,9 +16,12 @@ lint: ## Run static analysis
 	gosec -conf gosec.json "$(DIR)"
 
 .PHONY: test
-test: ## run test ex.) make test OPT="-run TestXXX"
+test: ## Run test ex.) make test OPT="-run TestXXX"
 	go test -v ./... "$(OPT)"
-
+	
 test-coverage: ## Run test with coverage
 	$(MAKE) test OPT="-coverprofile=coverage.out"
 	go tool cover -html=coverage.out
+
+run-local: ## Run this command locally. gh command is needed
+	@GITHUB_TOKEN=$(shell gh auth token) INPUT_CONFIG_FILE="./example.yml" go run ./...

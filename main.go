@@ -25,7 +25,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = issues.saveToFiles()
+	err = issues.saveToFiles(config)
 	if err != nil {
 		log.Fatalf("Failed to save Markdown file: %v", err)
 		os.Exit(1)
