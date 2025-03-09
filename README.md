@@ -23,11 +23,21 @@ repositories:
     - https://github.com/lostisland/faraday
     - https://github.com/fog/fog-google
 labels:
- - "help wanted"
- - "good first issue"
+  - "help wanted"
+  - "good first issue"
 ```
 
-### 2. Set Up the Workflow
+#### Tips
+
+You can list repositories from package definition file like `Gemfile` by following commands:
+
+- `Gemfile`
+  - `gem list --local --details | rg -o 'https://github.com/\S+'`
+  - `bundle exec gem list --details | rg -o 'https://github.com/\S+'`
+
+After adding the repositories in `example.yml`, you can see the labels in the repositories by running `make run-local-labels`
+
+### 3. Set Up the Workflow
 
 Create a GitHub Actions workflow (e.g., `.github/workflows/issue-scouter.yml`) to run Issue Scouter periodically.
 
@@ -37,7 +47,7 @@ name: Run Issue Scouter
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 15 * * *' # 00:00:00 JST
+    - cron: "0 15 * * *" # 00:00:00 JST
 
 jobs:
   run-issue-scouter:
@@ -56,7 +66,7 @@ jobs:
           config_file: "config.yml"
 ```
 
-### 3. View the Generated Issue List
+### 4. View the Generated Issue List
 
 After execution, an issue list will be generated in your repository. You can check an example output at https://github.com/ymtdzzz/my-issue-scouter .
 

@@ -9,12 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v69/github"
+	"github.com/ymtdzzz/issue-scouter/pkg/client"
+	"github.com/ymtdzzz/issue-scouter/pkg/config"
 )
 
-type issues map[string][]*github.Issue
-
-func (r issues) generateMarkdown(config *Config) markdownFiles {
+func generateMarkdown(c *config.Config, issues client.Issues) markdownFiles {
 	var (
 		sb, sbi strings.Builder
 		files   markdownFiles
@@ -22,12 +21,12 @@ func (r issues) generateMarkdown(config *Config) markdownFiles {
 
 	sbi.WriteString("# Issue List\n\n")
 	sbi.WriteString(fmt.Sprintf("Last Updated: %s\n", time.Now().Format("2006-01-02 15:04:05")))
-	sbi.WriteString(fmt.Sprintf("\n%s\n\n", config.Description))
+	sbi.WriteString(fmt.Sprintf("\n%s\n\n", c.Description))
 	sbi.WriteString("## Index\n\n")
 
-	basePath := config.Destination
+	basePath := c.Destination
 
-	for _, k := range slices.Sorted(maps.Keys(r)) {
+	for _, k := range slices.Sorted(maps.Keys(issues)) {
 		issuePath := fmt.Sprintf("%s/issues/%s.md", basePath, k)
 
 		sb.Reset()
@@ -37,15 +36,15 @@ func (r issues) generateMarkdown(config *Config) markdownFiles {
 		sb.WriteString("| --- | --- | --- | --- | --- | --- |\n")
 
 		// Add an entry to index
-		sbi.WriteString(fmt.Sprintf("- [%s - %d issues available](%s)\n", k, len(r[k]), issuePath))
+		sbi.WriteString(fmt.Sprintf("- [%s - %d issues available](%s)\n", k, len(issues[k]), issuePath))
 
-		for _, issue := range r[k] {
+		for _, issue := range issues[k] {
 			labels := make([]string, len(issue.Labels))
 			for i, label := range issue.Labels {
 				labels[i] = label.GetName()
 			}
 			assignee := issue.Assignee.GetName()
-			owner, repoName, _ := parseRepoURL(issue.GetURL())
+			owner, repoName, _ := config.ParseRepoURL(issue.GetURL())
 			sb.WriteString(fmt.Sprintf(
 				"| [%s](https://github.com/%s/%s) | [%s](%s) | %s | %s | %s | %d |\n",
 				repoName,
@@ -73,8 +72,8 @@ func (r issues) generateMarkdown(config *Config) markdownFiles {
 	return files
 }
 
-func (r issues) saveToFiles(config *Config) error {
-	return r.generateMarkdown(config).saveToFiles()
+func saveToFiles(config *config.Config, issues client.Issues) error {
+	return generateMarkdown(config, issues).saveToFiles()
 }
 
 type markdownFile struct {

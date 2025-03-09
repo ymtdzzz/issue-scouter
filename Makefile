@@ -17,11 +17,14 @@ lint: ## Run static analysis
 
 .PHONY: test
 test: ## Run test ex.) make test OPT="-run TestXXX"
-	go test -v ./... "$(OPT)"
-	
+	go test ./pkg/... ./cmd/... -v "$(OPT)"
+
 test-coverage: ## Run test with coverage
 	$(MAKE) test OPT="-coverprofile=coverage.out"
 	go tool cover -html=coverage.out
 
-run-local: ## Run this command locally. gh command is needed
-	@GITHUB_TOKEN=$(shell gh auth token) INPUT_CONFIG_FILE="./example.yml" go run ./...
+run-local-action: ## Run action command locally. gh command is needed
+	@GITHUB_TOKEN=$(shell gh auth token) INPUT_CONFIG_FILE="./example.yml" go run ./cmd/action
+
+run-local-labels: ## Run labels command locally. gh command is needed
+	@GITHUB_TOKEN=$(shell gh auth token) INPUT_CONFIG_FILE="./example.yml" go run ./cmd/labels
