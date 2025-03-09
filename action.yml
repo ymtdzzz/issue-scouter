@@ -1,5 +1,8 @@
 name: "Issue Scouter"
 description: "Github action to list of issues you can contribute"
+branding:
+  icon: "search"
+  color: "blue"
 inputs:
   config_file:
     description: "YAML configuration file"
