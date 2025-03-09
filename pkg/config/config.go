@@ -43,6 +43,9 @@ func LoadConfig(filename string) (*Config, error) {
 }
 
 func ParseRepoURL(url string) (owner, repo string, err error) {
+	if !strings.HasPrefix(url, "https://github.com/") {
+		return "", "", fmt.Errorf("not a valid GitHub URL: %s", url)
+	}
 	parts := strings.Split(strings.TrimPrefix(url, "https://github.com/"), "/")
 	if len(parts) < 2 {
 		return "", "", fmt.Errorf("invalid repository URL: %s", url)
