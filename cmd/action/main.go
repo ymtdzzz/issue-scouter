@@ -3,6 +3,9 @@ package main
 import (
 	"log"
 	"os"
+
+	"github.com/ymtdzzz/issue-scouter/pkg/client"
+	"github.com/ymtdzzz/issue-scouter/pkg/config"
 )
 
 func main() {
@@ -12,20 +15,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	config, err := loadConfig(configFile)
+	co, err := config.LoadConfig(configFile)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 		os.Exit(1)
 	}
 
-	client := newClient(config)
-	issues, err := client.fetchIssues()
+	c := client.NewClient(co)
+	issues, err := c.FetchIssues()
 	if err != nil {
 		log.Fatalf("Failed to fetch issues: %v", err)
 		os.Exit(1)
 	}
 
-	err = issues.saveToFiles(config)
+	err = saveToFiles(co, issues)
 	if err != nil {
 		log.Fatalf("Failed to save Markdown file: %v", err)
 		os.Exit(1)
