@@ -1,5 +1,5 @@
 repositories:
-  groupA:
+  groupB:
     - https://github.com/open-telemetry/opentelemetry-ruby
     - https://github.com/open-telemetry/opentelemetry-ruby-contrib
 labels:

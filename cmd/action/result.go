@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"maps"
 	"os"
 	"path/filepath"
@@ -73,7 +74,7 @@ func generateMarkdown(c *config.Config, issues client.Issues) markdownFiles {
 }
 
 func saveToFiles(config *config.Config, issues client.Issues) error {
-	return generateMarkdown(config, issues).saveToFiles()
+	return generateMarkdown(config, issues).saveToFiles(config)
 }
 
 type markdownFile struct {
@@ -83,7 +84,16 @@ type markdownFile struct {
 
 type markdownFiles []markdownFile
 
-func (fs markdownFiles) saveToFiles() error {
+func (fs markdownFiles) saveToFiles(config *config.Config) error {
+	// First, delete issues directory to remove old files if exists
+	issuesDir := fmt.Sprintf("%s/issues", config.Destination)
+	if _, err := os.Stat(issuesDir); err == nil {
+		log.Printf("Removing old issues directory: %s", issuesDir)
+		if err := os.RemoveAll(issuesDir); err != nil {
+			return fmt.Errorf("failed to remove issues directory: %v", err)
+		}
+	}
+
 	for _, f := range fs {
 		dir := filepath.Dir(f.pathRelative)
 		if _, err := os.Stat(dir); os.IsNotExist(err) {

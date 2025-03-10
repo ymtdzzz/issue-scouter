@@ -128,7 +128,10 @@ func TestSaveToFiles(t *testing.T) {
 				tt.files[i].pathRelative = filepath.Join(tmpDir, tt.files[i].pathRelative)
 			}
 
-			err := tt.files.saveToFiles()
+			err := tt.files.saveToFiles(&config.Config{
+				Destination: "output",
+				Description: "Test description",
+			})
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
