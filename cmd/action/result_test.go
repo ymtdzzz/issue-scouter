@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -57,7 +56,7 @@ func TestGenerateMarkdown(t *testing.T) {
 						fmt.Sprintf("Last Updated: %s\n", time.Now().Format("2006-01-02 15:04:05")) +
 						"\nTest description\n\n" +
 						"## Index\n\n" +
-						"- [team-a - 1 issues available](output/issues/team-a.md)\n",
+						"- [team-a - 1 issues available](./issues/team-a.md)\n",
 				},
 			},
 		},
@@ -85,13 +84,9 @@ func TestGenerateMarkdown(t *testing.T) {
 			got := generateMarkdown(tt.config, tt.issues)
 			assert.Equal(t, len(tt.want), len(got))
 
-			// Compare content excluding the dynamic timestamp
 			for i := range got {
 				assert.Equal(t, tt.want[i].pathRelative, got[i].pathRelative)
-				// Skip exact content comparison for README.md as it contains dynamic timestamp
-				if !strings.HasSuffix(got[i].pathRelative, "README.md") {
-					assert.Equal(t, tt.want[i].content, got[i].content)
-				}
+				assert.Equal(t, tt.want[i].content, got[i].content)
 			}
 		})
 	}

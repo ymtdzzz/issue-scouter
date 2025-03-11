@@ -37,7 +37,7 @@ func generateMarkdown(c *config.Config, issues client.Issues) markdownFiles {
 		sb.WriteString("| --- | --- | --- | --- | --- | --- |\n")
 
 		// Add an entry to index
-		sbi.WriteString(fmt.Sprintf("- [%s - %d issues available](%s)\n", k, len(issues[k]), issuePath))
+		sbi.WriteString(fmt.Sprintf("- [%s - %d issues available](./issues/%s.md)\n", k, len(issues[k]), k))
 
 		for _, issue := range issues[k] {
 			labels := make([]string, len(issue.Labels))
