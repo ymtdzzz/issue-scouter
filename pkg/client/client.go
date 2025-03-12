@@ -52,7 +52,7 @@ func (c *client) GetClient() *github.Client {
 
 func (c *client) FetchIssues() (Issues, error) {
 	issues := Issues{}
-	chunkSize := 100
+	chunkSize := 50
 
 	for _, k := range slices.Sorted(maps.Keys(c.config.Repos)) {
 		var gis []*github.Issue
@@ -99,27 +99,41 @@ func (c *client) fetchIssuesByRepos(ownerRepo []string) ([]*github.Issue, error)
 
 	q := fmt.Sprintf("%s is:open is:issue label:%s", reposForQuery, c.config.LabelsForQuery())
 	log.Printf("Query: %s", q)
+
+	var allIssues []*github.Issue
 	opts := &github.SearchOptions{
 		TextMatch: true,
 		ListOptions: github.ListOptions{
 			PerPage: c.config.PerPage,
 		},
 	}
-	results, _, err := c.ghc.Search.Issues(ctx, q, opts)
-	if err != nil {
-		return nil, err
+
+	page := 1
+	for {
+		log.Printf("Fetching page %d ...", page)
+		results, resp, err := c.ghc.Search.Issues(ctx, q, opts)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch issues: %w", err)
+		}
+
+		allIssues = append(allIssues, results.Issues...)
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+		page++
 	}
-	issues := results.Issues
 
 	// Replace URL
-	for i := range issues {
-		replacedURL := strings.Replace(issues[i].GetURL(), API_URL_BASE, URL_BASE, 1)
-		issues[i].URL = &replacedURL
+	for i := range allIssues {
+		replacedURL := strings.Replace(allIssues[i].GetURL(), API_URL_BASE, URL_BASE, 1)
+		allIssues[i].URL = &replacedURL
 	}
 
 	// Sort by Repository and UpdatedAt
-	sort.Slice(issues, func(i, j int) bool {
-		a, b := issues[i], issues[j]
+	sort.Slice(allIssues, func(i, j int) bool {
+		a, b := allIssues[i], allIssues[j]
 		_, aRepo, _ := config.ParseRepoURL(a.GetURL())
 		_, bRepo, _ := config.ParseRepoURL(b.GetURL())
 		switch {
@@ -132,5 +146,5 @@ func (c *client) fetchIssuesByRepos(ownerRepo []string) ([]*github.Issue, error)
 		}
 	})
 
-	return issues, err
+	return allIssues, nil
 }
