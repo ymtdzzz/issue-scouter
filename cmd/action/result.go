@@ -44,7 +44,10 @@ func generateMarkdown(c *config.Config, issues client.Issues) markdownFiles {
 			for i, label := range issue.Labels {
 				labels[i] = label.GetName()
 			}
-			assignee := issue.Assignee.GetName()
+			var assignee string
+			if issue.Assignee.GetLogin() != "" {
+				assignee = "@" + issue.Assignee.GetLogin()
+			}
 			owner, repoName, _ := config.ParseRepoURL(issue.GetURL())
 			sb.WriteString(fmt.Sprintf(
 				"| [%s](https://github.com/%s/%s) | [%s](%s) | %s | %s | %s | %d |\n",

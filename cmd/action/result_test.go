@@ -48,7 +48,7 @@ func TestGenerateMarkdown(t *testing.T) {
 					content: "# team-a\n\n" +
 						"| Repository | Title | UpdatedAt | Labels | Assignee | Comments |\n" +
 						"| --- | --- | --- | --- | --- | --- |\n" +
-						"| [repo](https://github.com/owner/repo) | [Issue 1](https://github.com/owner/repo/issues/1) | 2025-03-09 | bug | user1 | 2 |\n\n",
+						"| [repo](https://github.com/owner/repo) | [Issue 1](https://github.com/owner/repo/issues/1) | 2025-03-09 | bug | @user1 | 2 |\n\n",
 				},
 				{
 					pathRelative: "output/README.md",
