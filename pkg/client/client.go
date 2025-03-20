@@ -23,6 +23,7 @@ const (
 type client struct {
 	ghc    *github.Client
 	config *config.Config
+	cache  map[string][]*github.Issue
 }
 
 type Issues map[string][]*github.Issue
@@ -34,7 +35,11 @@ func NewClient(config *config.Config) *client {
 		log.Println("GITHUB_TOKEN is not set, initialize Github client without credentials")
 		ghc = github.NewClient(nil)
 
-		return &client{ghc, config}
+		return &client{
+			ghc:    ghc,
+			config: config,
+			cache:  make(map[string][]*github.Issue),
+		}
 	}
 
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
@@ -43,7 +48,11 @@ func NewClient(config *config.Config) *client {
 
 	log.Println("Github client is initialized with given credentials")
 
-	return &client{ghc, config}
+	return &client{
+		ghc:    ghc,
+		config: config,
+		cache:  make(map[string][]*github.Issue),
+	}
 }
 
 func (c *client) GetClient() *github.Client {
@@ -56,6 +65,9 @@ func (c *client) FetchIssues() (Issues, error) {
 
 	for _, k := range slices.Sorted(maps.Keys(c.config.Repos)) {
 		var gis []*github.Issue
+
+		log.Printf("")
+		log.Printf(">> Fetching issues for %s <<", k)
 
 		ownerRepos := make([]string, 0, len(c.config.Repos[k]))
 		for _, r := range c.config.Repos[k] {
@@ -88,11 +100,35 @@ func (c *client) FetchIssues() (Issues, error) {
 	return issues, nil
 }
 
+func (c *client) checkCache(ownerRepo []string) ([]*github.Issue, []string) {
+	var allIssues []*github.Issue
+	reposToFetch := make([]string, 0, len(ownerRepo))
+
+	for _, repo := range ownerRepo {
+		if issues, ok := c.cache[repo]; ok {
+			log.Printf("Cache hit for %s", repo)
+			allIssues = append(allIssues, issues...)
+		} else {
+			reposToFetch = append(reposToFetch, repo)
+		}
+	}
+
+	return allIssues, reposToFetch
+}
+
 func (c *client) fetchIssuesByRepos(ownerRepo []string) ([]*github.Issue, error) {
+	// Get cached issues and identify remaining repos to fetch
+	issues, reposToFetch := c.checkCache(ownerRepo)
+
+	if len(reposToFetch) == 0 {
+		log.Printf("All issues are fetched from cache!")
+		return issues, nil
+	}
+
 	ctx := context.Background()
 
-	repos := make([]string, len(ownerRepo))
-	for i, r := range ownerRepo {
+	repos := make([]string, len(reposToFetch))
+	for i, r := range reposToFetch {
 		repos[i] = "repo:" + r
 	}
 	reposForQuery := strings.Join(repos, " ")
@@ -100,7 +136,6 @@ func (c *client) fetchIssuesByRepos(ownerRepo []string) ([]*github.Issue, error)
 	q := fmt.Sprintf("%s is:open is:issue label:%s", reposForQuery, c.config.LabelsForQuery())
 	log.Printf("Query: %s", q)
 
-	var allIssues []*github.Issue
 	opts := &github.SearchOptions{
 		TextMatch: true,
 		ListOptions: github.ListOptions{
@@ -116,7 +151,7 @@ func (c *client) fetchIssuesByRepos(ownerRepo []string) ([]*github.Issue, error)
 			return nil, fmt.Errorf("failed to fetch issues: %w", err)
 		}
 
-		allIssues = append(allIssues, results.Issues...)
+		issues = append(issues, results.Issues...)
 
 		if resp.NextPage == 0 {
 			break
@@ -125,15 +160,27 @@ func (c *client) fetchIssuesByRepos(ownerRepo []string) ([]*github.Issue, error)
 		page++
 	}
 
-	// Replace URL
-	for i := range allIssues {
-		replacedURL := strings.Replace(allIssues[i].GetURL(), API_URL_BASE, URL_BASE, 1)
-		allIssues[i].URL = &replacedURL
+	// Replace URL and cache issues per repository
+	for i := range issues {
+		replacedURL := strings.Replace(issues[i].GetURL(), API_URL_BASE, URL_BASE, 1)
+		replacedRepositoryURL := strings.Replace(issues[i].GetRepositoryURL(), API_URL_BASE, URL_BASE, 1)
+		issues[i].URL = &replacedURL
+		issues[i].RepositoryURL = &replacedRepositoryURL
+
+		repoURL := issues[i].GetRepositoryURL()
+		owner, repo, _ := config.ParseRepoURL(repoURL)
+		repoKey := owner + "/" + repo
+
+		// Initialize cache entry if not exists
+		if _, ok := c.cache[repoKey]; !ok {
+			c.cache[repoKey] = make([]*github.Issue, 0)
+		}
+		c.cache[repoKey] = append(c.cache[repoKey], issues[i])
 	}
 
 	// Sort by Repository and UpdatedAt
-	sort.Slice(allIssues, func(i, j int) bool {
-		a, b := allIssues[i], allIssues[j]
+	sort.Slice(issues, func(i, j int) bool {
+		a, b := issues[i], issues[j]
 		_, aRepo, _ := config.ParseRepoURL(a.GetURL())
 		_, bRepo, _ := config.ParseRepoURL(b.GetURL())
 		switch {
@@ -146,5 +193,5 @@ func (c *client) fetchIssuesByRepos(ownerRepo []string) ([]*github.Issue, error)
 		}
 	})
 
-	return allIssues, nil
+	return issues, nil
 }

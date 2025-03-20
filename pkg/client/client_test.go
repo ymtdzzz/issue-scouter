@@ -15,10 +15,11 @@ import (
 
 func createMockIssue(number int, title, repo string, updatedAt time.Time) *github.Issue {
 	return &github.Issue{
-		Number:    github.Ptr(number),
-		Title:     github.Ptr(title),
-		URL:       github.Ptr("https://github.com/" + repo),
-		UpdatedAt: &github.Timestamp{Time: updatedAt},
+		Number:        github.Ptr(number),
+		Title:         github.Ptr(title),
+		URL:           github.Ptr("https://api.github.com/repos/" + repo),
+		RepositoryURL: github.Ptr("https://api.github.com/repos/" + repo),
+		UpdatedAt:     &github.Timestamp{Time: updatedAt},
 	}
 }
 
@@ -63,6 +64,65 @@ func TestNewClient(t *testing.T) {
 			} else {
 				assert.False(t, hasToken, "Transport should not be oauth2.Transport when token is not provided")
 			}
+		})
+	}
+}
+
+func TestCheckCache(t *testing.T) {
+	testCases := []struct {
+		name            string
+		cache           map[string][]*github.Issue
+		ownerRepo       []string
+		wantIssues      []*github.Issue
+		wantRepoToFetch []string
+	}{
+		{
+			name:            "no cache",
+			cache:           map[string][]*github.Issue{},
+			ownerRepo:       []string{"owner/repo1", "owner/repo2"},
+			wantIssues:      nil,
+			wantRepoToFetch: []string{"owner/repo1", "owner/repo2"},
+		},
+		{
+			name: "partial cache hit",
+			cache: map[string][]*github.Issue{
+				"owner/repo1": {
+					{Title: github.Ptr("issue1")},
+					{Title: github.Ptr("issue2")},
+				},
+			},
+			ownerRepo: []string{"owner/repo1", "owner/repo2"},
+			wantIssues: []*github.Issue{
+				{Title: github.Ptr("issue1")},
+				{Title: github.Ptr("issue2")},
+			},
+			wantRepoToFetch: []string{"owner/repo2"},
+		},
+		{
+			name: "all cache hit",
+			cache: map[string][]*github.Issue{
+				"owner/repo1": {{Title: github.Ptr("issue1")}},
+				"owner/repo2": {{Title: github.Ptr("issue2")}},
+			},
+			ownerRepo: []string{"owner/repo1", "owner/repo2"},
+			wantIssues: []*github.Issue{
+				{Title: github.Ptr("issue1")},
+				{Title: github.Ptr("issue2")},
+			},
+			wantRepoToFetch: []string{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := &client{
+				config: &config.Config{},
+				cache:  tc.cache,
+			}
+
+			gotIssues, gotRemaining := c.checkCache(tc.ownerRepo)
+			assert.Equal(t, tc.wantIssues, gotIssues)
+			assert.Equal(t, tc.wantRepoToFetch, gotRemaining)
 		})
 	}
 }
@@ -147,6 +207,7 @@ func TestFetchIssues(t *testing.T) {
 			client := &client{
 				ghc:    ghClient,
 				config: tt.config,
+				cache:  make(map[string][]*github.Issue),
 			}
 
 			issues, err := client.FetchIssues()
@@ -193,7 +254,7 @@ func Test_fetchIssuesByRepos(t *testing.T) {
 		},
 		{
 			name:       "should handle multiple repos",
-			ownerRepos: []string{"https://github.com/owner1/repo1", "https://github.com/owner2/repo2"},
+			ownerRepos: []string{"owner1/repo1", "owner2/repo2"},
 			labels:     []string{"help-wanted"},
 			mockResponses: []mock.MockBackendOption{
 				mock.WithRequestMatch(
@@ -209,7 +270,7 @@ func Test_fetchIssuesByRepos(t *testing.T) {
 		},
 		{
 			name:       "should handle API error",
-			ownerRepos: []string{"https://github.com/owner/repo"},
+			ownerRepos: []string{"owner/repo"},
 			labels:     []string{"help-wanted"},
 			mockResponses: []mock.MockBackendOption{
 				mock.WithRequestMatchHandler(
@@ -238,6 +299,7 @@ func Test_fetchIssuesByRepos(t *testing.T) {
 				config: &config.Config{
 					Labels: tt.labels,
 				},
+				cache: make(map[string][]*github.Issue),
 			}
 
 			issues, err := client.fetchIssuesByRepos(tt.ownerRepos)
@@ -247,6 +309,7 @@ func Test_fetchIssuesByRepos(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Len(t, issues, tt.wantCount)
+				assert.Len(t, client.cache, len(tt.ownerRepos))
 
 				if tt.wantCount > 0 {
 					// Verify sorting
