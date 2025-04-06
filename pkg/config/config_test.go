@@ -67,6 +67,31 @@ repositories:
 				assert.Contains(t, c.Description, "issue-scouter")
 				assert.Contains(t, c.Repos, "owner1")
 				assert.Equal(t, []string{"repo1", "repo2"}, c.Repos["owner1"])
+				assert.False(t, c.IncludeMetadata, "IncludeMetadata should be false by default")
+			},
+		},
+		{
+			name: "with include_metadata true",
+			content: `
+repositories:
+  owner1:
+    - repo1
+include_metadata: true`,
+			wantErr: false,
+			validate: func(t *testing.T, c *Config) {
+				assert.True(t, c.IncludeMetadata, "IncludeMetadata should be true when explicitly set")
+			},
+		},
+		{
+			name: "with include_metadata false",
+			content: `
+repositories:
+  owner1:
+    - repo1
+include_metadata: false`,
+			wantErr: false,
+			validate: func(t *testing.T, c *Config) {
+				assert.False(t, c.IncludeMetadata, "IncludeMetadata should be false when explicitly set")
 			},
 		},
 		{
