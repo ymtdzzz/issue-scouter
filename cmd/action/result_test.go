@@ -61,6 +61,76 @@ func TestGenerateMarkdown(t *testing.T) {
 			},
 		},
 		{
+			name: "generates markdown files with metadata",
+			config: &config.Config{
+				Destination:     "output",
+				Description:     "Test description",
+				IncludeMetadata: true,
+			},
+			issues: client.Issues{
+				"team-a": []*github.Issue{
+					{
+						Title:     github.Ptr("Issue 1"),
+						Body:      github.Ptr("Issue description"),
+						HTMLURL:   github.Ptr("https://github.com/owner/repo/issues/1"),
+						UpdatedAt: &github.Timestamp{Time: fixedTime},
+						URL:       github.Ptr("https://github.com/owner/repo/issues/1"),
+						Labels: []*github.Label{
+							{
+								Name:        github.Ptr("bug"),
+								Color:       github.Ptr("red"),
+								Description: github.Ptr("Bug report"),
+							},
+						},
+						Assignee: &github.User{
+							Login: github.Ptr("user1"),
+							Name:  github.Ptr("User One"),
+							Email: github.Ptr("user1@example.com"),
+						},
+						Comments: github.Ptr(2),
+					},
+				},
+			},
+			want: markdownFiles{
+				{
+					pathRelative: "output/issues/team-a.md",
+					content: "# team-a\n\n" +
+						"| Repository | Title | UpdatedAt | Labels | Assignee | Comments |\n" +
+						"| --- | --- | --- | --- | --- | --- |\n" +
+						"| [repo](https://github.com/owner/repo) | [Issue 1](https://github.com/owner/repo/issues/1) | 2025-03-09 | bug | @user1 | 2 |\n\n" +
+						"\n<!--\n" +
+						`{
+  "title": "Issue 1",
+  "body": "Issue description",
+  "labels": [
+    {
+      "name": "bug",
+      "color": "red",
+      "description": "Bug report"
+    }
+  ],
+  "assignee": {
+    "login": "user1",
+    "name": "User One",
+    "email": "user1@example.com"
+  },
+  "comments": 2,
+  "updated_at": "2025-03-09T10:00:00Z",
+  "url": "https://github.com/owner/repo/issues/1"
+}` +
+						"\n-->\n",
+				},
+				{
+					pathRelative: "output/README.md",
+					content: "# Issue List\n\n" +
+						fmt.Sprintf("Last Updated: %s\n", time.Now().Format("2006-01-02 15:04:05")) +
+						"\nTest description\n\n" +
+						"## Index\n\n" +
+						"- [team-a - 1 issues available](./issues/team-a.md)\n",
+				},
+			},
+		},
+		{
 			name: "handles empty issues",
 			config: &config.Config{
 				Destination: "output",

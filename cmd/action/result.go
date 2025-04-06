@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"maps"
@@ -13,6 +14,28 @@ import (
 	"github.com/ymtdzzz/issue-scouter/pkg/client"
 	"github.com/ymtdzzz/issue-scouter/pkg/config"
 )
+
+type IssueMetadata struct {
+	Title     string           `json:"title"`
+	Body      string           `json:"body"`
+	Labels    []LabelMetadata  `json:"labels"`
+	Assignee  AssigneeMetadata `json:"assignee,omitempty"`
+	Comments  int              `json:"comments"`
+	UpdatedAt string           `json:"updated_at"`
+	URL       string           `json:"url"`
+}
+
+type LabelMetadata struct {
+	Name        string `json:"name"`
+	Color       string `json:"color"`
+	Description string `json:"description"`
+}
+
+type AssigneeMetadata struct {
+	Login string `json:"login"`
+	Name  string `json:"name"`
+	Email string `json:"email,omitempty"`
+}
 
 func generateMarkdown(c *config.Config, issues client.Issues) markdownFiles {
 	var (
@@ -63,6 +86,45 @@ func generateMarkdown(c *config.Config, issues client.Issues) markdownFiles {
 			))
 		}
 		sb.WriteString("\n")
+
+		if c.IncludeMetadata {
+			for _, issue := range issues[k] {
+				metadata := IssueMetadata{
+					Title: issue.GetTitle(),
+					Body:  issue.GetBody(),
+					Labels: func() []LabelMetadata {
+						labels := make([]LabelMetadata, len(issue.Labels))
+						for i, l := range issue.Labels {
+							labels[i] = LabelMetadata{
+								Name:        l.GetName(),
+								Color:       l.GetColor(),
+								Description: l.GetDescription(),
+							}
+						}
+						return labels
+					}(),
+					Comments:  issue.GetComments(),
+					UpdatedAt: issue.GetUpdatedAt().Time.Format(time.RFC3339),
+					URL:       issue.GetURL(),
+				}
+				if issue.Assignee != nil {
+					metadata.Assignee = AssigneeMetadata{
+						Login: issue.Assignee.GetLogin(),
+						Name:  issue.Assignee.GetName(),
+						Email: issue.Assignee.GetEmail(),
+					}
+				}
+				jsonData, err := json.MarshalIndent(metadata, "", "  ")
+				if err != nil {
+					log.Printf("Failed to marshal metadata for issue %s: %v", issue.GetTitle(), err)
+					continue
+				}
+				sb.WriteString("\n<!--\n")
+				sb.Write(jsonData)
+				sb.WriteString("\n-->\n")
+			}
+		}
+
 		files = append(files, markdownFile{
 			pathRelative: issuePath,
 			content:      sb.String(),

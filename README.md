@@ -25,6 +25,9 @@ repositories:
 labels:
   - "help wanted"
   - "good first issue"
+# If this option is true, generated issue list will contain detailed issue metadata as comment,
+# which can be send to the LLM.
+include_metadata: true
 ```
 
 #### Tips
